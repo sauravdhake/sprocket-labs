@@ -13,7 +13,8 @@
     "resolveJsonModule": true,
     "declaration": false,
     "sourceMap": false,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"]
 }
