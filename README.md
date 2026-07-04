@@ -1,4 +1,4 @@
-# economy-service
+# Economy-service
 
 A durable wallet/economy backend for a game: players earn currency, spend it in a shop, and claim one-time rewards — with **exactly-once effects under retries** and **crash-safe durability**, backed by SQLite.
 
