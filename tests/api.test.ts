@@ -92,4 +92,14 @@ describe("wallet API", () => {
     assert.equal((second.json as { error: string }).error, "idempotency_key_reused");
   });
 
+  test("retrying a failed (insufficient_funds) purchase with the same key replays the same rejection", async () => {
+    await post(server.baseUrl, "/v1/wallets/p8/credit", { amount: 5, reason: "seed" }, randomUUID());
+    const key = randomUUID();
+    const body = { itemId: "castle", price: 1000 };
+    const first = await post(server.baseUrl, "/v1/wallets/p8/purchase", body, key);
+    const second = await post(server.baseUrl, "/v1/wallets/p8/purchase", body, key);
+    assert.equal(first.status, 409);
+    assert.deepEqual(first.json, second.json);
+  });
+
 });
