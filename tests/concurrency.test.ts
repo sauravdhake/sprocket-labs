@@ -63,4 +63,18 @@ describe("concurrency correctness", () => {
     assert.equal(body2.inventory.length, 1);
   });
 
+  test("N concurrent claims of the same reward for the same player grant it exactly once", async () => {
+    const playerId = "racer3";
+    const attempts = Array.from({ length: 20 }, () =>
+      post(server.baseUrl, "/v1/rewards/gold-chest/claim", { playerId }, randomUUID()),
+    );
+    const results = await Promise.all(attempts);
+
+    const grants = results.filter((r) => (r.json as { alreadyClaimed: boolean }).alreadyClaimed === false);
+    assert.equal(grants.length, 1, `expected exactly 1 fresh grant, got ${grants.length}`);
+
+    const wallet = await get(server.baseUrl, `/v1/wallets/${playerId}`);
+    assert.deepEqual((wallet.json as { claimedRewards: string[] }).claimedRewards, ["gold-chest"]);
+  });
+
 });
