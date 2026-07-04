@@ -115,4 +115,17 @@ describe("wallet API", () => {
     assert.deepEqual((wallet.json as { claimedRewards: string[] }).claimedRewards, ["daily"]);
   });
 
+  test("playerId / rewardId / itemId reject unsafe characters", async () => {
+    const res = await get(server.baseUrl, "/v1/wallets/" + encodeURIComponent("../etc/passwd"));
+    assert.equal(res.status, 400);
+
+    const res2 = await post(server.baseUrl, "/v1/wallets/p10/purchase", { itemId: "bad id!", price: 1 }, randomUUID());
+    assert.equal(res2.status, 400);
+  });
+
+  test("amount above MAX_AMOUNT is rejected", async () => {
+    const res = await post(server.baseUrl, "/v1/wallets/p11/credit", { amount: 2_000_000_000, reason: "x" }, randomUUID());
+    assert.equal(res.status, 400);
+  });
+
 });
