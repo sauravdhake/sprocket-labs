@@ -39,4 +39,12 @@ describe("wallet API", () => {
     assert.equal((get1.json as { balance: number }).balance, 100);
   });
 
+  test("credit validation rejects non-positive / non-integer amounts", async () => {
+    const bad = [{ amount: 0, reason: "x" }, { amount: -5, reason: "x" }, { amount: 1.5, reason: "x" }, { reason: "x" }];
+    for (const body of bad) {
+      const res = await post(server.baseUrl, "/v1/wallets/p3/credit", body, randomUUID());
+      assert.equal(res.status, 400, JSON.stringify(body));
+    }
+  });
+
 });
