@@ -18,6 +18,7 @@ export function createWalletsRouter(db: DB, crashHook?: CrashHook): Router {
     const key = requireIdempotencyKey(req.header("Idempotency-Key"));
     const body = parseOrThrow(creditBodySchema, req.body, "body");
 
+    //Credit increases the balance with idempotency
     const result = withIdempotency(
       db,
       { key, method: req.method, path: req.originalUrl, requestBody: { playerId, ...body } },
