@@ -56,4 +56,16 @@ describe("wallet API", () => {
     assert.deepEqual(body.inventory, ["sword"]);
   });
 
+  test("purchase fails with 409 insufficient_funds and makes no changes", async () => {
+    await post(server.baseUrl, "/v1/wallets/p5/credit", { amount: 10, reason: "seed" }, randomUUID());
+    const res = await post(server.baseUrl, "/v1/wallets/p5/purchase", { itemId: "sword", price: 999 }, randomUUID());
+    assert.equal(res.status, 409);
+    assert.equal((res.json as { error: string }).error, "insufficient_funds");
+
+    const wallet = await get(server.baseUrl, "/v1/wallets/p5");
+    const body = wallet.json as { balance: number; inventory: string[] };
+    assert.equal(body.balance, 10);
+    assert.deepEqual(body.inventory, []);
+  });
+
 });
