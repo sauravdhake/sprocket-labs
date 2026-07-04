@@ -128,4 +128,9 @@ describe("wallet API", () => {
     assert.equal(res.status, 400);
   });
 
+  test("unknown route returns 404", async () => {
+    const res = await get(server.baseUrl, "/v1/nonexistent");
+    assert.equal(res.status, 404);
+  });
+
 });
