@@ -47,4 +47,13 @@ describe("wallet API", () => {
     }
   });
 
+  test("purchase debits balance and grants item", async () => {
+    await post(server.baseUrl, "/v1/wallets/p4/credit", { amount: 100, reason: "seed" }, randomUUID());
+    const res = await post(server.baseUrl, "/v1/wallets/p4/purchase", { itemId: "sword", price: 40 }, randomUUID());
+    assert.equal(res.status, 200);
+    const body = res.json as { balance: number; inventory: string[] };
+    assert.equal(body.balance, 60);
+    assert.deepEqual(body.inventory, ["sword"]);
+  });
+
 });
