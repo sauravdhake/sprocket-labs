@@ -68,4 +68,18 @@ describe("wallet API", () => {
     assert.deepEqual(body.inventory, []);
   });
 
+  test("retrying credit with the same Idempotency-Key applies it exactly once", async () => {
+    const key = randomUUID();
+    const body = { amount: 50, reason: "double-submit test" };
+    const first = await post(server.baseUrl, "/v1/wallets/p6/credit", body, key);
+    const second = await post(server.baseUrl, "/v1/wallets/p6/credit", body, key);
+    const third = await post(server.baseUrl, "/v1/wallets/p6/credit", body, key);
+
+    assert.deepEqual(first.json, second.json);
+    assert.deepEqual(second.json, third.json);
+
+    const wallet = await get(server.baseUrl, "/v1/wallets/p6");
+    assert.equal((wallet.json as { balance: number }).balance, 50);
+  });
+
 });
