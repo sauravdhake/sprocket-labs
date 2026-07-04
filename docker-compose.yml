@@ -1,0 +1,17 @@
+services:
+  economy-service:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/data/economy.db
+    volumes:
+      # Named volume so the SQLite file survives `docker compose down`/
+      # container recreation — this is what makes the crash-durability
+      # guarantees meaningful when run in Docker, not just on bare metal.
+      - economy-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  economy-data:
