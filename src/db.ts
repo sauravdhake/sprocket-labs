@@ -73,3 +73,47 @@ export function openDb({ dbPath }: OpenDbOptions): DB {
   return db;
 }
 
+/**
+ * Runs `fn` inside a SQLite IMMEDIATE transaction. IMMEDIATE acquires the
+ * write lock at the start of the transaction rather than lazily on the
+ * first write, closing the read-then-upgrade race that a DEFERRED
+ * transaction would allow between two concurrent requests that both read
+ * the same wallet balance before either has written. Combined with
+ * node:sqlite's synchronous, single-connection API and Node's single
+ * JS thread, this fully serializes conflicting requests.
+ *
+ * On any thrown error the transaction is rolled back and the error
+ * re-thrown; on success it is committed before returning.
+ */
+export function runInTransaction<T>(db: DB, fn: () => T): T {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const result = fn();
+    db.exec("COMMIT");
+    return result;
+  } catch (err) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // If the connection is already gone (e.g. mid-crash-test), there's
+      // nothing left to roll back — ignore.
+    }
+    throw err;
+  }
+}
+
+/**
+ * Idempotency keys don't need to live forever — a client only ever retries
+ * within a bounded window after a request (network blip, client restart,
+ * etc). We retain keys for RETENTION_MS and opportunistically prune older
+ * ones on startup, so the table doesn't grow unbounded in a long-running
+ * deployment without needing a separate scheduler/cron dependency.
+ */
+export const IDEMPOTENCY_KEY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export function pruneExpiredIdempotencyKeys(db: DB, retentionMs = IDEMPOTENCY_KEY_RETENTION_MS): number {
+  const cutoff = new Date(Date.now() - retentionMs).toISOString();
+  const stmt = db.prepare(`DELETE FROM idempotency_keys WHERE created_at < ?`);
+  const result = stmt.run(cutoff);
+  return Number(result.changes);
+}
