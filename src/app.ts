@@ -1,9 +1,11 @@
 import express, { type Request, type Response, type NextFunction } from "express";
+import swaggerUi from "swagger-ui-express";
 import type { DB } from "./db.js";
 import { createWalletsRouter } from "./routes/wallets.js";
 import { createRewardsRouter } from "./routes/rewards.js";
 import { isAppError } from "./errors.js";
 import type { CrashHook } from "./repository.js";
+import { openApiSpec } from "./openapi.js";
 
 export function createApp(db: DB, crashHook?: CrashHook) {
   const app = express();
@@ -15,6 +17,12 @@ export function createApp(db: DB, crashHook?: CrashHook) {
 
   app.get("/healthz", (_req, res) => {
     res.status(200).json({ status: "ok" });
+  });
+
+  // Interactive API docs — hand-written spec kept in sync with validation.ts.
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+  app.get("/openapi.json", (_req, res) => {
+    res.status(200).json(openApiSpec);
   });
 
   app.use("/v1", createWalletsRouter(db, crashHook));
