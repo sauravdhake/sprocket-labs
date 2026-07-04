@@ -18,15 +18,15 @@ sequenceDiagram
     participant Inv as inventory-service (external, separate store)
 
     C->>Eco: POST /purchase (Idempotency-Key: k)
-    Eco->>Eco: BEGIN; debit price; COMMIT
-    Note over Eco,Inv: PARTIAL-FAILURE WINDOW:\ndebit is committed, grant has not\nyet been confirmed.
+    Eco->>Eco: BEGIN, debit price, COMMIT
+    Note over Eco,Inv: PARTIAL-FAILURE WINDOW: debit is committed, grant has not yet been confirmed.
     Eco->>Inv: POST /grant (itemId, playerId, idempotency key)
     alt inventory call succeeds
         Inv-->>Eco: 200 granted
         Eco-->>C: 200 purchase complete
     else inventory call times out / 5xx / connection dropped
         Inv--xEco: no response, or ambiguous response
-        Note over Eco: We don't know if the grant happened\nor not — money is debited either way.
+        Note over Eco: We don't know if the grant happened or not, money is debited either way.
     end
 ```
 
