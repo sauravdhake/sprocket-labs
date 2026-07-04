@@ -77,4 +77,15 @@ describe("concurrency correctness", () => {
     assert.deepEqual((wallet.json as { claimedRewards: string[] }).claimedRewards, ["gold-chest"]);
   });
 
+  test("concurrent credits all apply (no lost updates)", async () => {
+    const playerId = "racer4";
+    const attempts = Array.from({ length: 25 }, () =>
+      post(server.baseUrl, `/v1/wallets/${playerId}/credit`, { amount: 10, reason: "drip" }, randomUUID()),
+    );
+    await Promise.all(attempts);
+
+    const wallet = await get(server.baseUrl, `/v1/wallets/${playerId}`);
+    assert.equal((wallet.json as { balance: number }).balance, 250);
+  });
+
 });
