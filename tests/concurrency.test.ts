@@ -40,4 +40,27 @@ describe("concurrency correctness", () => {
     assert.equal(body.inventory.length, 1);
   });
 
+  test("N concurrent requests with the SAME Idempotency-Key apply the effect exactly once", async () => {
+    const playerId = "racer2";
+    await post(server.baseUrl, `/v1/wallets/${playerId}/credit`, { amount: 500, reason: "seed" }, randomUUID());
+
+    const key = randomUUID();
+    const body = { itemId: "unique-item", price: 30 };
+    const attempts = Array.from({ length: 15 }, () => post(server.baseUrl, `/v1/wallets/${playerId}/purchase`, body, key));
+    const results = await Promise.all(attempts);
+
+    for (const r of results) {
+      assert.equal(r.status, 200);
+    }
+    const firstBody = JSON.stringify(results[0]?.json);
+    for (const r of results) {
+      assert.equal(JSON.stringify(r.json), firstBody);
+    }
+
+    const wallet = await get(server.baseUrl, `/v1/wallets/${playerId}`);
+    const body2 = wallet.json as { balance: number; inventory: string[] };
+    assert.equal(body2.balance, 470);
+    assert.equal(body2.inventory.length, 1);
+  });
+
 });
