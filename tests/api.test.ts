@@ -82,4 +82,14 @@ describe("wallet API", () => {
     assert.equal((wallet.json as { balance: number }).balance, 50);
   });
 
+  test("reusing an Idempotency-Key with a different body is rejected", async () => {
+    const key = randomUUID();
+    const first = await post(server.baseUrl, "/v1/wallets/p7/credit", { amount: 10, reason: "a" }, key);
+    assert.equal(first.status, 200);
+
+    const second = await post(server.baseUrl, "/v1/wallets/p7/credit", { amount: 20, reason: "b" }, key);
+    assert.equal(second.status, 409);
+    assert.equal((second.json as { error: string }).error, "idempotency_key_reused");
+  });
+
 });
