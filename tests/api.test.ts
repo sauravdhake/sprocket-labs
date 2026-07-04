@@ -102,4 +102,17 @@ describe("wallet API", () => {
     assert.deepEqual(first.json, second.json);
   });
 
+  test("reward claim grants once; repeated claims report alreadyClaimed without re-granting", async () => {
+    const first = await post(server.baseUrl, "/v1/rewards/daily/claim", { playerId: "p9" }, randomUUID());
+    assert.equal(first.status, 200);
+    assert.equal((first.json as { alreadyClaimed: boolean }).alreadyClaimed, false);
+
+    const second = await post(server.baseUrl, "/v1/rewards/daily/claim", { playerId: "p9" }, randomUUID());
+    assert.equal(second.status, 200);
+    assert.equal((second.json as { alreadyClaimed: boolean }).alreadyClaimed, true);
+
+    const wallet = await get(server.baseUrl, "/v1/wallets/p9");
+    assert.deepEqual((wallet.json as { claimedRewards: string[] }).claimedRewards, ["daily"]);
+  });
+
 });
